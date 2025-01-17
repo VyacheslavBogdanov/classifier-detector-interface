@@ -1,8 +1,8 @@
 import type { MessageType, MockAPIResponse } from '../utils/types';
 
 const messageTypes: MessageType[] = [
-	{ class: 'health--success', message: 'Модуль детектора огня работает корректно' },
-	{ class: 'health--warning', message: 'Модуль детектора огня отключен' },
+	{ class: 'health--success', message: 'Модуль "Классификатор целей" работает корректно' },
+	{ class: 'health--warning', message: 'Модуль "Классификатор целей" отключен' },
 	{ class: 'result--fire', message: 'Огонь обнаружен' },
 	{ class: 'result--no-fire', message: 'Огонь не обнаружен' },
 ];

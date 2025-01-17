@@ -1,9 +1,9 @@
 <template>
 	<button v-if="hasFireRects" class="clear" @click="emit('clearPreview')">
-		<span class="clear__name">Очистить изображение</span>
+		<span class="clear__name">Очистить изображения</span>
 	</button>
 	<button v-else class="fire-detect" @click="emit('sendRequest')">
-		<span class="fire-detect__name">Обнаружить огонь</span>
+		<span class="fire-detect__name">Распознать объекты</span>
 	</button>
 </template>
 
