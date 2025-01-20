@@ -1,18 +1,19 @@
 <template>
 	<div
-		:class="['upload', { 'upload--active': fileName, 'upload--disabled': isDisabled }]"
+		:class="['upload', { 'upload--active': fileUrls.length, 'upload--disabled': isDisabled }]"
 		@dragover.prevent
 		@drop.prevent
 	>
 		<input
 			class="upload__input"
 			type="file"
+			multiple
 			accept="image/*"
 			@change="onFileChange"
 			:disabled="isDisabled"
 		/>
 		<span class="upload__text">
-			{{ fileName || 'Загрузить изображение...' }}
+			{{ setUploadText() }}
 		</span>
 	</div>
 </template>
@@ -30,26 +31,41 @@ const emit = defineEmits<{
 }>();
 
 const isDisabled = computed(() => props.status === 'inactive');
-
 const fileName = ref<string | null>(null);
+const fileUrls = ref<string[]>([]);
 
 const onFileChange = (event: Event) => {
 	const input = event.target as HTMLInputElement;
-	if (input.files && input.files[0]) {
-		fileName.value = input.files[0].name;
 
-		const fileUrl = URL.createObjectURL(input.files[0]);
-		emit('fileUrl', fileUrl);
+	if (input.files) {
+		fileName.value = input.files[0].name;
+		const fileUrlsArray = [];
+		for (let i = 0; i < input.files.length; i++) {
+			const fileUrl = URL.createObjectURL(input.files[i]);
+			fileUrlsArray.push(fileUrl);
+			emit('fileUrl', fileUrl);
+		}
+		fileUrls.value = fileUrlsArray;
 
 		const reader = new FileReader();
-		reader.onload = () => {
-			if (reader.result) {
-				emit('fileSelected', reader.result.toString());
+		reader.onload = (e: any) => {
+			if (e.target?.result) {
+				emit('fileSelected', e.target.result.toString());
 			}
 		};
 		reader.readAsDataURL(input.files[0]);
 	} else {
 		fileName.value = null;
+	}
+};
+
+const setUploadText = () => {
+	if (fileUrls.value.length === 1) {
+		return fileName;
+	} else if (fileUrls.value.length > 1) {
+		return `Выбрано ${fileUrls.value.length} файл(а/ов)`;
+	} else {
+		return 'Загрузить изображения...';
 	}
 };
 </script>
