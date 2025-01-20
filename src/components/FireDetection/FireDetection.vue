@@ -10,7 +10,7 @@
 		/>
 	</div>
 	<div v-if="imageSrc" class="preview">
-		<img ref="imageElement" class="preview__img" :src="imageSrc" alt="Изображение" />
+		<!-- <img ref="imageElement" class="preview__img" :src="imageSrc" alt="Изображение" /> -->
 		<div
 			v-for="(rect, index) in fireRects"
 			:key="index"
@@ -52,7 +52,7 @@ const props = defineProps<{
 	status: string;
 }>();
 
-const imageSrc = ref<string | null>(null);
+const imageSrc = ref<string[] | null>(null);
 const result = ref<{ type: string } | null>(null);
 const fireRects = ref<
 	{ top: number; left: number; width: number; height: number; confidence: number | null }[]
@@ -81,10 +81,13 @@ const resultClass = computed(() => {
 });
 
 const updateImage = (base64: string) => {
+	// console.log('base64', base64);
+
 	imageBase64.value = base64;
 };
 
-const updateImageSrc = (url: string) => {
+const updateImageSrc = (url: string[]) => {
+	console.log('url', url);
 	imageSrc.value = url;
 };
 
@@ -173,6 +176,8 @@ const sendRequest = async () => {
 watch(imageSrc, () => {
 	clearPreview();
 });
+
+console.log('imageSrc', imageSrc.value);
 </script>
 
 <style lang="scss" scoped>
