@@ -1,18 +1,19 @@
 <template>
-	<div
-		:class="['upload', { 'upload--active': fileName, 'upload--disabled': isDisabled }]"
-		@dragover.prevent
-		@drop.prevent
-	>
+	<div :class="['upload', { 'upload--disabled': isDisabled }]" @dragover.prevent @drop.prevent>
 		<input
 			class="upload__input"
 			type="file"
 			accept="image/*"
-			@change="onFileChange"
+			multiple
+			@change="onFilesChange"
 			:disabled="isDisabled"
 		/>
 		<span class="upload__text">
-			{{ fileName || 'Загрузить изображение...' }}
+			{{
+				fileNames.length > 0
+					? `Загружено ${fileNames.length} изображений`
+					: 'Загрузить изображения...'
+			}}
 		</span>
 	</div>
 </template>
@@ -22,34 +23,47 @@ import { ref, computed } from 'vue';
 
 const props = defineProps<{
 	status: string;
+	maxFiles: number;
 }>();
 
 const emit = defineEmits<{
-	(event: 'fileSelected', base64: string): void;
-	(event: 'fileUrl', url: string): void;
+	(event: 'filesSelected', files: { base64: string; url: string }[]): void;
 }>();
 
+// Вычисляемое свойство для проверки активности загрузки
 const isDisabled = computed(() => props.status === 'inactive');
 
-const fileName = ref<string | null>(null);
+// Хранение имен файлов
+const fileNames = ref<string[]>([]);
 
-const onFileChange = (event: Event) => {
+// Метод обработки изменения файлов
+const onFilesChange = (event: Event) => {
 	const input = event.target as HTMLInputElement;
-	if (input.files && input.files[0]) {
-		fileName.value = input.files[0].name;
 
-		const fileUrl = URL.createObjectURL(input.files[0]);
-		emit('fileUrl', fileUrl);
+	if (input.files) {
+		const files = Array.from(input.files).slice(0, props.maxFiles); // Ограничиваем количество файлов
+		fileNames.value = files.map((file) => file.name); // Сохраняем имена файлов
 
-		const reader = new FileReader();
-		reader.onload = () => {
-			if (reader.result) {
-				emit('fileSelected', reader.result.toString());
-			}
-		};
-		reader.readAsDataURL(input.files[0]);
-	} else {
-		fileName.value = null;
+		// Преобразуем файлы в данные base64 и URL
+		const fileDataPromises = files.map((file) => {
+			return new Promise<{ base64: string; url: string }>((resolve) => {
+				const reader = new FileReader();
+				reader.onload = () => {
+					if (reader.result) {
+						resolve({
+							base64: reader.result.toString(),
+							url: URL.createObjectURL(file),
+						});
+					}
+				};
+				reader.readAsDataURL(file);
+			});
+		});
+
+		// Когда все файлы обработаны, отправляем их наверх через emit
+		Promise.all(fileDataPromises).then((fileData) => {
+			emit('filesSelected', fileData);
+		});
 	}
 };
 </script>
