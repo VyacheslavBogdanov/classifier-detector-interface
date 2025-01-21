@@ -176,8 +176,6 @@ const sendRequest = async () => {
 watch(imageSrc, () => {
 	clearPreview();
 });
-
-console.log('imageSrc', imageSrc.value);
 </script>
 
 <style lang="scss" scoped>

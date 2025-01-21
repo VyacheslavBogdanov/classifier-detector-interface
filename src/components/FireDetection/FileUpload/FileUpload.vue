@@ -49,6 +49,8 @@ const onFileChange = (event: Event) => {
 
 		const reader = new FileReader();
 		reader.onload = (e: any) => {
+			console.log('e.target', e.target);
+
 			if (e.target?.result) {
 				emit('fileSelected', e.target.result.toString());
 			}
