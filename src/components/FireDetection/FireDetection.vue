@@ -10,7 +10,6 @@
 		/>
 	</div>
 
-
 	<div v-if="currentImageSrc" class="preview">
 		<img ref="imageElement" class="preview__img" :src="currentImageSrc" alt="Изображение" />
 
@@ -26,11 +25,11 @@
 			}"
 		>
 			<div
-				v-if="rect.confidence !== null"
+				v-if="rect.confidence !== null && rect.type"
 				class="preview__confidence"
 				:style="{ top: '-3px', left: '0' }"
 			>
-				{{ rect.confidence }}%
+				{{ rect.type }} ({{ rect.confidence }}%)
 			</div>
 		</div>
 	</div>
@@ -62,20 +61,24 @@ const props = defineProps<{
 	status: string;
 }>();
 
-
 const images = ref<{ url: string; base64: string }[]>([]);
 const currentIndex = ref(0);
-
 
 const result = ref<{ type: string } | null>(null);
 
 const fireRects = ref<
-	{ top: number; left: number; width: number; height: number; confidence: number | null }[]
+	{
+		top: number;
+		left: number;
+		width: number;
+		height: number;
+		confidence: number | null;
+		type: string | null;
+	}[]
 >([]);
 const imageElement = ref<HTMLImageElement | null>(null);
 
 const currentImageSrc = computed(() => images.value[currentIndex.value]?.url || null);
-
 
 const updateImages = (files: { base64: string; url: string }[]) => {
 	images.value = files;
@@ -86,7 +89,6 @@ const updateImages = (files: { base64: string; url: string }[]) => {
 const setPreviewImage = (index: number) => {
 	currentIndex.value = index;
 	clearPreview();
-
 };
 
 const clearPreview = () => {
@@ -139,23 +141,26 @@ const sendRequest = async () => {
 		const data = await response.json();
 		console.log('Ответ от сервера:', data);
 
-		const fireObjects = data.objects.filter((obj: any) => obj.type === 'fire');
+		const objectTypes = ['person', 'persons group', 'vehicle', 'velo / moto'];
 
-		if (fireObjects.length > 0) {
+		const filteredObjects = data.objects.filter((obj: any) => objectTypes.includes(obj.type));
+
+		if (filteredObjects.length > 0) {
 			const img = imageElement.value;
 
 			if (img) {
 				const scaleX = img.clientWidth / img.naturalWidth;
 				const scaleY = img.clientHeight / img.naturalHeight;
 
-				fireRects.value = fireObjects.map((fireObject: any) => {
-					const [x, y, w, h] = fireObject.rect;
+				fireRects.value = filteredObjects.map((object: any) => {
+					const [x, y, w, h] = object.rect;
 					return {
 						left: x * scaleX,
 						top: y * scaleY,
 						width: w * scaleX,
 						height: h * scaleY,
-						confidence: Math.round(fireObject.confidence * 100),
+						confidence: Math.round(object.confidence * 100),
+						type: object.type,
 					};
 				});
 			}

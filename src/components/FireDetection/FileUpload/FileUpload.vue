@@ -1,24 +1,19 @@
 <template>
-
 	<div
 		:class="['upload', { 'upload--active': fileUrls.length, 'upload--disabled': isDisabled }]"
 		@dragover.prevent
 		@drop.prevent
 	>
-
 		<input
 			class="upload__input"
 			type="file"
 			multiple
 			accept="image/*"
-			multiple
 			@change="onFilesChange"
 			:disabled="isDisabled"
 		/>
 		<span class="upload__text">
-
 			{{ setUploadText() }}
-
 		</span>
 	</div>
 </template>
@@ -32,28 +27,20 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-
 	(event: 'filesSelected', files: { base64: string; url: string }[]): void;
-
 }>();
 
-
 const isDisabled = computed(() => props.status === 'inactive');
-
 const fileName = ref<string | null>(null);
 const fileUrls = ref<string[]>([]);
-
-
 
 const onFilesChange = (event: Event) => {
 	const input = event.target as HTMLInputElement;
 
 	if (input.files) {
+		const files = Array.from(input.files).slice(0, props.maxFiles);
+		fileName.value = files[0].name;
 
-		const files = Array.from(input.files).slice(0, props.maxFiles); 
-		fileNames.value = files.map((file) => file.name); 
-
-		
 		const fileDataPromises = files.map((file) => {
 			return new Promise<{ base64: string; url: string }>((resolve) => {
 				const reader = new FileReader();
@@ -69,11 +56,10 @@ const onFilesChange = (event: Event) => {
 			});
 		});
 
-		
 		Promise.all(fileDataPromises).then((fileData) => {
+			fileUrls.value = fileData.map((data) => data.url);
 			emit('filesSelected', fileData);
 		});
-
 	}
 };
 
@@ -87,90 +73,6 @@ const setUploadText = () => {
 	}
 };
 </script>
-
-<!-- <template>
-	<div
-		:class="['upload', { 'upload--active': fileUrls.length, 'upload--disabled': isDisabled }]"
-		@dragover.prevent
-		@drop.prevent
-	>
-		<input
-			class="upload__input"
-			type="file"
-			multiple
-			accept="image/*"
-			@change="onFileChange"
-			:disabled="isDisabled"
-		/>
-		<span class="upload__text">
-			{{ setUploadText() }}
-		</span>
-	</div>
-</template>
-
-<script setup lang="ts">
-import { ref, computed } from 'vue';
-
-const props = defineProps<{
-	status: string;
-}>();
-
-const emit = defineEmits<{
-	(event: 'filesSelected', base64Array: string[]): void;
-	(event: 'filesUrls', urlsArray: string[]): void;
-}>();
-
-const isDisabled = computed(() => props.status === 'inactive');
-const fileName = ref<string | null>(null);
-const fileUrls = ref<string[]>([]);
-
-const onFileChange = (event: Event) => {
-	const input = event.target as HTMLInputElement;
-
-	if (input.files) {
-		fileName.value = input.files[0].name;
-		const urlsArray: string[] = [];
-		const base64Array: string[] = [];
-		const promises: Promise<void>[] = [];
-
-		for (let i = 0; i < input.files.length; i++) {
-			const file = input.files[i];
-			const fileUrl = URL.createObjectURL(file);
-			urlsArray.push(fileUrl);
-
-			const promise = new Promise<void>((resolve) => {
-				const reader = new FileReader();
-				reader.onload = (e: any) => {
-					if (e.target?.result) {
-						base64Array.push(e.target.result.toString());
-					}
-					resolve();
-				};
-				reader.readAsDataURL(file);
-			});
-
-			promises.push(promise);
-		}
-
-		fileUrls.value = urlsArray;
-
-		Promise.all(promises).then(() => {
-			emit('filesSelected', base64Array);
-			emit('filesUrls', urlsArray);
-		});
-	}
-};
-
-const setUploadText = () => {
-	if (fileUrls.value.length === 1) {
-		return fileName;
-	} else if (fileUrls.value.length > 1) {
-		return `Выбрано ${fileUrls.value.length} файл(а/ов)`;
-	} else {
-		return 'Загрузить изображения...';
-	}
-};
-</script> -->
 
 <style scoped lang="scss">
 @import '../../../styles/main.scss';
