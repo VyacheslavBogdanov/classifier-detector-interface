@@ -10,8 +10,10 @@
 		/>
 	</div>
 
+
 	<div v-if="currentImageSrc" class="preview">
 		<img ref="imageElement" class="preview__img" :src="currentImageSrc" alt="Изображение" />
+
 		<div
 			v-for="(rect, index) in fireRects"
 			:key="index"
@@ -60,14 +62,20 @@ const props = defineProps<{
 	status: string;
 }>();
 
+
 const images = ref<{ url: string; base64: string }[]>([]);
 const currentIndex = ref(0);
+
+
+const result = ref<{ type: string } | null>(null);
+
 const fireRects = ref<
 	{ top: number; left: number; width: number; height: number; confidence: number | null }[]
 >([]);
 const imageElement = ref<HTMLImageElement | null>(null);
 
 const currentImageSrc = computed(() => images.value[currentIndex.value]?.url || null);
+
 
 const updateImages = (files: { base64: string; url: string }[]) => {
 	images.value = files;
@@ -78,6 +86,7 @@ const updateImages = (files: { base64: string; url: string }[]) => {
 const setPreviewImage = (index: number) => {
 	currentIndex.value = index;
 	clearPreview();
+
 };
 
 const clearPreview = () => {
