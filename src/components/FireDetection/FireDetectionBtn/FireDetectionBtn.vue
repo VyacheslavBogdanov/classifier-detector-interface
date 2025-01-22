@@ -1,9 +1,9 @@
 <template>
-	<button v-if="hasFireRects" class="clear" @click="emit('clearPreview')">
+	<button v-if="hasClassifierRects" class="clear" @click="emit('clearPreview')">
 		<span class="clear__name">Очистить изображения</span>
 	</button>
-	<button v-else class="fire-detect" @click="emit('sendRequest')">
-		<span class="fire-detect__name">Распознать объекты</span>
+	<button v-else class="classifier-detect" @click="emit('sendRequest')">
+		<span class="classifier-detect__name">Распознать объекты</span>
 	</button>
 </template>
 
@@ -20,7 +20,7 @@ const emit = defineEmits<{
 	(event: 'clearPreview'): void;
 }>();
 
-const hasFireRects = computed(() => props.fireRects.length > 0);
+const hasClassifierRects = computed(() => props.classifierRects.length > 0);
 </script>
 
 <style lang="scss" scoped>
@@ -58,7 +58,7 @@ const hasFireRects = computed(() => props.fireRects.length > 0);
 	}
 }
 
-.fire-detect {
+.classifier-detect {
 	position: relative;
 	height: 50px;
 	padding: 0 30px;

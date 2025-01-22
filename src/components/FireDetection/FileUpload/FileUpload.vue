@@ -23,7 +23,6 @@ import { ref, computed } from 'vue';
 
 const props = defineProps<{
 	status: string;
-	maxFiles: number;
 }>();
 
 const emit = defineEmits<{
@@ -38,10 +37,9 @@ const onFilesChange = (event: Event) => {
 	const input = event.target as HTMLInputElement;
 
 	if (input.files) {
-		const files = Array.from(input.files).slice(0, props.maxFiles);
-		fileName.value = files[0].name;
+		fileName.value = input.files[0].name;
 
-		const fileDataPromises = files.map((file) => {
+		const fileDataPromises = Array.from(input.files).map((file) => {
 			return new Promise<{ base64: string; url: string }>((resolve) => {
 				const reader = new FileReader();
 				reader.onload = () => {
