@@ -66,8 +66,8 @@ const props = defineProps<{
 }>();
 
 const images = ref<{ url: string; base64: string }[]>([]);
-const currentIndex = ref(0);
-
+const currentIndex = ref<number>(0);
+const detection = ref<boolean>(false);
 const thumbnailsContainer = ref<HTMLElement | null>(null);
 const result = ref<{ type: string } | null>(null);
 
@@ -128,17 +128,24 @@ const updateImages = (files: { base64: string; url: string }[]) => {
 };
 
 const setPreviewImage = (index: number) => {
+	if (detection.value === true) {
+		setTimeout(() => {
+			sendRequest();
+		}, 0);
+	}
 	currentIndex.value = index;
 	clearPreview();
 	centerThumbnail(index);
 };
 
 const clearPreview = () => {
+	detection.value = false;
 	fireRects.value = [];
 	result.value = null;
 };
 
 const sendRequest = async () => {
+	detection.value = true;
 	const currentImage = images.value[currentIndex.value]?.base64;
 	if (!currentImage) {
 		console.error('Изображение не выбрано');
@@ -267,7 +274,7 @@ watch(currentImageSrc, () => {
 		position: absolute;
 		text-align: center;
 		font-size: 12px;
-		background: rgba(255, 255, 255, 0.8);
+		background: rgba(255, 255, 255, 0.5);
 		color: red;
 		padding: 2px 4px;
 		border-radius: 4px;

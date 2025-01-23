@@ -20,7 +20,7 @@ const emit = defineEmits<{
 	(event: 'clearPreview'): void;
 }>();
 
-const hasClassifierRects = computed(() => props.classifierRects.length > 0);
+const hasClassifierRects = computed(() => props.fireRects.length > 0);
 </script>
 
 <style lang="scss" scoped>
