@@ -1,18 +1,19 @@
 <template>
 	<div
-		:class="['upload', { 'upload--active': fileName, 'upload--disabled': isDisabled }]"
+		:class="['upload', { 'upload--active': fileUrls.length, 'upload--disabled': isDisabled }]"
 		@dragover.prevent
 		@drop.prevent
 	>
 		<input
 			class="upload__input"
 			type="file"
+			multiple
 			accept="image/*"
-			@change="onFileChange"
+			@change="onFilesChange"
 			:disabled="isDisabled"
 		/>
 		<span class="upload__text">
-			{{ fileName || 'Загрузить изображение...' }}
+			{{ setUploadText() }}
 		</span>
 	</div>
 </template>
@@ -25,31 +26,48 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-	(event: 'fileSelected', base64: string): void;
-	(event: 'fileUrl', url: string): void;
+	(event: 'filesSelected', files: { base64: string; url: string }[]): void;
 }>();
 
 const isDisabled = computed(() => props.status === 'inactive');
-
 const fileName = ref<string | null>(null);
+const fileUrls = ref<string[]>([]);
 
-const onFileChange = (event: Event) => {
+const onFilesChange = (event: Event) => {
 	const input = event.target as HTMLInputElement;
-	if (input.files && input.files[0]) {
+
+	if (input.files) {
 		fileName.value = input.files[0].name;
 
-		const fileUrl = URL.createObjectURL(input.files[0]);
-		emit('fileUrl', fileUrl);
+		const fileDataPromises = Array.from(input.files).map((file) => {
+			return new Promise<{ base64: string; url: string }>((resolve) => {
+				const reader = new FileReader();
+				reader.onload = () => {
+					if (reader.result) {
+						resolve({
+							base64: reader.result.toString(),
+							url: URL.createObjectURL(file),
+						});
+					}
+				};
+				reader.readAsDataURL(file);
+			});
+		});
 
-		const reader = new FileReader();
-		reader.onload = () => {
-			if (reader.result) {
-				emit('fileSelected', reader.result.toString());
-			}
-		};
-		reader.readAsDataURL(input.files[0]);
+		Promise.all(fileDataPromises).then((fileData) => {
+			fileUrls.value = fileData.map((data) => data.url);
+			emit('filesSelected', fileData);
+		});
+	}
+};
+
+const setUploadText = () => {
+	if (fileUrls.value.length === 1) {
+		return fileName;
+	} else if (fileUrls.value.length > 1) {
+		return `Выбрано ${fileUrls.value.length} файл(а/ов)`;
 	} else {
-		fileName.value = null;
+		return 'Загрузить изображения...';
 	}
 };
 </script>

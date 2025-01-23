@@ -1,18 +1,19 @@
 <template>
 	<div class="middle-elements">
-		<FileUpload @fileSelected="updateImage" @fileUrl="updateImageSrc" :status="props.status" />
-		<FireDetectionBtn
-			v-if="imageSrc"
+		<FileUpload @filesSelected="updateImages" :status="props.status" />
+		<DetectionBtn
+			v-if="currentImageSrc"
 			@sendRequest="sendRequest"
 			@clearPreview="clearPreview"
 			:status="props.status"
-			:fireRects="fireRects"
+			:detection="detection"
 		/>
 	</div>
-	<div v-if="imageSrc" class="preview">
-		<img ref="imageElement" class="preview__img" :src="imageSrc" alt="Изображение" />
+	<div v-if="currentImageSrc" class="preview">
+		<img ref="imageElement" class="preview__img" :src="currentImageSrc" alt="Изображение" />
+
 		<div
-			v-for="(rect, index) in fireRects"
+			v-for="(rect, index) in rects"
 			:key="index"
 			class="preview__rect"
 			:style="{
@@ -23,14 +24,24 @@
 			}"
 		>
 			<div
-				v-if="rect.confidence !== null"
+				v-if="rect.confidence !== null && rect.type"
 				class="preview__confidence"
-				:style="{
-					top: '-3px',
-					left: '0',
-				}"
+				:style="{ top: '-3px', left: '0' }"
 			>
-				{{ rect.confidence }}%
+				{{ rect.type }} ({{ rect.confidence }}%)
+			</div>
+		</div>
+	</div>
+	<div v-if="images.length > 0" class="thumbnails">
+		<div ref="thumbnailsContainer" class="thumbnails__container">
+			<div
+				v-for="(image, index) in images"
+				:key="index"
+				class="thumbnails__item"
+				@click="setPreviewImage(index)"
+				:class="{ 'thumbnails__item--active': index === currentIndex }"
+			>
+				<img class="thumbnails__image" :src="image.url" alt="Миниатюра" />
 			</div>
 		</div>
 	</div>
@@ -44,7 +55,7 @@
 import { ref, computed, watch } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import FileUpload from './FileUpload/FileUpload.vue';
-import FireDetectionBtn from './FireDetectionBtn/FireDetectionBtn.vue';
+import DetectionBtn from './DetectionBtn/DetectionBtn.vue';
 import type { MessageType } from '../utils/types';
 
 const props = defineProps<{
@@ -52,54 +63,93 @@ const props = defineProps<{
 	status: string;
 }>();
 
-const imageSrc = ref<string | null>(null);
+const images = ref<{ url: string; base64: string }[]>([]);
+const currentIndex = ref<number>(0);
+const detection = ref<boolean>(false);
+const thumbnailsContainer = ref<HTMLElement | null>(null);
 const result = ref<{ type: string } | null>(null);
-const fireRects = ref<
-	{ top: number; left: number; width: number; height: number; confidence: number | null }[]
+
+const rects = ref<
+	{
+		top: number;
+		left: number;
+		width: number;
+		height: number;
+		confidence: number | null;
+		type: string | null;
+	}[]
 >([]);
-const imageBase64 = ref<string | null>(null);
 const imageElement = ref<HTMLImageElement | null>(null);
 
+const currentImageSrc = computed(() => images.value[currentIndex.value]?.url || null);
+
 const message = computed(() => {
-	if (result.value?.type === 'fire') {
-		const newArr = props.messageTypes.filter((type) => type.class === 'result--fire');
+	if (result.value?.type === 'object') {
+		const newArr = props.messageTypes.filter((type) => type.class === 'result--object');
 		return newArr.length > 0 ? newArr[0].message : 'Статус огня не определен';
 	} else {
-		const newArr = props.messageTypes.filter((type) => type.class === 'result--no-fire');
+		const newArr = props.messageTypes.filter((type) => type.class === 'result--no-object');
 		return newArr.length > 0 ? newArr[0].message : 'Статус огня не определен';
 	}
 });
 
 const resultClass = computed(() => {
-	if (result.value?.type === 'fire') {
-		const newArr = props.messageTypes.filter((type) => type.class === 'result--fire');
+	if (result.value?.type === 'object') {
+		const newArr = props.messageTypes.filter((type) => type.class === 'result--object');
 		return newArr.length > 0 ? newArr[0].class : 'result--info';
 	} else {
-		const newArr = props.messageTypes.filter((type) => type.class === 'result--no-fire');
+		const newArr = props.messageTypes.filter((type) => type.class === 'result--no-object');
 		return newArr.length > 0 ? newArr[0].class : 'result--info';
 	}
 });
 
-const updateImage = (base64: string) => {
-	imageBase64.value = base64;
+const centerThumbnail = (index: number) => {
+	const container = thumbnailsContainer.value;
+	if (container) {
+		const thumbnailWidth = 120;
+		const gap = 8;
+		const visibleWidth = container.offsetWidth;
+
+		const scrollTo = index * (thumbnailWidth + gap) - (visibleWidth - thumbnailWidth) / 2;
+
+		container.scrollTo({
+			left: Math.max(0, Math.min(scrollTo, container.scrollWidth - visibleWidth)),
+			behavior: 'smooth',
+		});
+	}
 };
 
-const updateImageSrc = (url: string) => {
-	imageSrc.value = url;
+const updateImages = (files: { base64: string; url: string }[]) => {
+	images.value = files;
+	currentIndex.value = 0;
+	clearPreview();
+};
+
+const setPreviewImage = (index: number) => {
+	if (detection.value === true) {
+		setTimeout(() => {
+			sendRequest();
+		}, 0);
+	}
+	currentIndex.value = index;
+	centerThumbnail(index);
 };
 
 const clearPreview = () => {
-	fireRects.value = [];
+	detection.value = false;
+	rects.value = [];
 	result.value = null;
 };
 
 const sendRequest = async () => {
-	if (!imageBase64.value) {
+	detection.value = true;
+	const currentImage = images.value[currentIndex.value]?.base64;
+	if (!currentImage) {
 		console.error('Изображение не выбрано');
 		return;
 	}
 
-	const base64Image = imageBase64.value.replace(/^data:image\/[a-z]+;base64,/, '');
+	const base64Image = currentImage.replace(/^data:image\/[a-z]+;base64,/, '');
 
 	const requestId = uuidv4();
 	const Url = import.meta.env.VITE_SERVER_URL;
@@ -138,40 +188,43 @@ const sendRequest = async () => {
 		const data = await response.json();
 		console.log('Ответ от сервера:', data);
 
-		const fireObjects = data.objects.filter((obj: any) => obj.type === 'fire');
+		const objectTypes = ['person', 'persons group', 'vehicle', 'velo / moto'];
 
-		if (fireObjects.length > 0) {
-			result.value = { type: 'fire' };
+		const filteredObjects = data.objects.filter((obj: any) => objectTypes.includes(obj.type));
+
+		if (filteredObjects.length > 0) {
+			result.value = { type: 'object' };
 			const img = imageElement.value;
 
 			if (img) {
 				const scaleX = img.clientWidth / img.naturalWidth;
 				const scaleY = img.clientHeight / img.naturalHeight;
 
-				fireRects.value = fireObjects.map((fireObject: any) => {
-					const [x, y, w, h] = fireObject.rect;
+				rects.value = filteredObjects.map((object: any) => {
+					const [x, y, w, h] = object.rect;
 					return {
 						left: x * scaleX,
 						top: y * scaleY,
 						width: w * scaleX,
 						height: h * scaleY,
-						confidence: Math.round(fireObject.confidence * 100),
+						confidence: Math.round(object.confidence * 100),
+						type: object.type,
 					};
 				});
 			}
 		} else {
-			result.value = { type: 'no_fire' };
-			fireRects.value = [];
+			result.value = { type: 'no_object' };
+			rects.value = [];
 		}
 	} catch (error) {
 		console.error('Ошибка при запросе:', error);
-		result.value = { type: 'no_fire' };
-		fireRects.value = [];
+		rects.value = [];
+		result.value = { type: 'no_object' };
 	}
 };
 
-watch(imageSrc, () => {
-	clearPreview();
+watch(currentImageSrc, () => {
+	rects.value = [];
 });
 </script>
 
@@ -218,11 +271,48 @@ watch(imageSrc, () => {
 		position: absolute;
 		text-align: center;
 		font-size: 12px;
-		background: rgba(255, 255, 255, 0.8);
+		background: rgba(255, 255, 255, 0.5);
 		color: red;
 		padding: 2px 4px;
 		border-radius: 4px;
 		transform: translateY(-100%);
+	}
+}
+
+.thumbnails {
+	display: flex;
+	justify-content: center;
+	margin-top: 20px;
+
+	&__container {
+		display: flex;
+		gap: 8px;
+		overflow-x: auto;
+		scroll-behavior: smooth;
+		padding: 10px;
+		width: 100%;
+		max-width: 740px;
+	}
+
+	&__item {
+		flex-shrink: 0;
+		width: 120px;
+		height: 120px;
+		cursor: pointer;
+		border: 1.5px solid transparent;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	&__item--active {
+		border-color: $border-color;
+	}
+
+	&__image {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
 	}
 }
 
@@ -251,12 +341,12 @@ watch(imageSrc, () => {
 		height: 30px;
 	}
 
-	&--fire {
+	&--object {
 		background-color: #e0fde7;
 		color: $color-success;
 	}
 
-	&--no-fire {
+	&--no-object {
 		background-color: #f2dee0;
 		color: $color-error;
 	}

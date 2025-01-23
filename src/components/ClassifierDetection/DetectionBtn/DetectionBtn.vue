@@ -1,9 +1,9 @@
 <template>
-	<button v-if="hasFireRects" class="clear" @click="emit('clearPreview')">
-		<span class="clear__name">Очистить изображение</span>
+	<button v-if="props.detection" class="clear" @click="emit('clearPreview')">
+		<span class="clear__name">Очистить изображения</span>
 	</button>
-	<button v-else class="fire-detect" @click="emit('sendRequest')">
-		<span class="fire-detect__name">Обнаружить огонь</span>
+	<button v-else class="classifier-detect" @click="emit('sendRequest')">
+		<span class="classifier-detect__name">Распознать объекты</span>
 	</button>
 </template>
 
@@ -12,15 +12,13 @@ import { computed } from 'vue';
 
 const props = defineProps<{
 	status: string;
-	fireRects: { top: number; left: number; width: number; height: number }[];
+	detection: boolean;
 }>();
 
 const emit = defineEmits<{
 	(event: 'sendRequest'): void;
 	(event: 'clearPreview'): void;
 }>();
-
-const hasFireRects = computed(() => props.fireRects.length > 0);
 </script>
 
 <style lang="scss" scoped>
@@ -58,7 +56,7 @@ const hasFireRects = computed(() => props.fireRects.length > 0);
 	}
 }
 
-.fire-detect {
+.classifier-detect {
 	position: relative;
 	height: 50px;
 	padding: 0 30px;
