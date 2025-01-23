@@ -224,7 +224,7 @@ const sendRequest = async () => {
 };
 
 watch(currentImageSrc, () => {
-	clearPreview();
+	rects.value = [];
 });
 </script>
 

@@ -12,7 +12,6 @@ import { computed } from 'vue';
 
 const props = defineProps<{
 	status: string;
-
 	detection: boolean;
 }>();
 
