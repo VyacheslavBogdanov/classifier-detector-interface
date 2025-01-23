@@ -1,6 +1,6 @@
 <template>
 	<div class="middle-elements">
-		<FileUpload @filesSelected="updateImages" :status="props.status" :maxFiles="15" />
+		<FileUpload @filesSelected="updateImages" :status="props.status" />
 		<FireDetectionBtn
 			v-if="currentImageSrc"
 			@sendRequest="sendRequest"
