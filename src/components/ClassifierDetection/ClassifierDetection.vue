@@ -1,12 +1,12 @@
 <template>
 	<div class="middle-elements">
 		<FileUpload @filesSelected="updateImages" :status="props.status" />
-		<FireDetectionBtn
+		<DetectionBtn
 			v-if="currentImageSrc"
 			@sendRequest="sendRequest"
 			@clearPreview="clearPreview"
 			:status="props.status"
-			:fireRects="fireRects"
+			:detection="detection"
 		/>
 	</div>
 
@@ -57,7 +57,7 @@
 import { ref, computed, watch } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import FileUpload from './FileUpload/FileUpload.vue';
-import FireDetectionBtn from './FireDetectionBtn/FireDetectionBtn.vue';
+import DetectionBtn from './DetectionBtn/DetectionBtn.vue';
 import type { MessageType } from '../utils/types';
 
 const props = defineProps<{
@@ -134,7 +134,6 @@ const setPreviewImage = (index: number) => {
 		}, 0);
 	}
 	currentIndex.value = index;
-	clearPreview();
 	centerThumbnail(index);
 };
 

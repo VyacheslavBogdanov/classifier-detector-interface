@@ -1,5 +1,5 @@
 <template>
-	<button v-if="hasClassifierRects" class="clear" @click="emit('clearPreview')">
+	<button v-if="props.detection" class="clear" @click="emit('clearPreview')">
 		<span class="clear__name">Очистить изображения</span>
 	</button>
 	<button v-else class="classifier-detect" @click="emit('sendRequest')">
@@ -12,15 +12,14 @@ import { computed } from 'vue';
 
 const props = defineProps<{
 	status: string;
-	fireRects: { top: number; left: number; width: number; height: number }[];
+
+	detection: boolean;
 }>();
 
 const emit = defineEmits<{
 	(event: 'sendRequest'): void;
 	(event: 'clearPreview'): void;
 }>();
-
-const hasClassifierRects = computed(() => props.fireRects.length > 0);
 </script>
 
 <style lang="scss" scoped>
