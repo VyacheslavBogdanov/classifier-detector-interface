@@ -9,12 +9,11 @@
 			:detection="detection"
 		/>
 	</div>
-
 	<div v-if="currentImageSrc" class="preview">
 		<img ref="imageElement" class="preview__img" :src="currentImageSrc" alt="Изображение" />
 
 		<div
-			v-for="(rect, index) in fireRects"
+			v-for="(rect, index) in rects"
 			:key="index"
 			class="preview__rect"
 			:style="{
@@ -33,7 +32,6 @@
 			</div>
 		</div>
 	</div>
-
 	<div v-if="images.length > 0" class="thumbnails">
 		<div ref="thumbnailsContainer" class="thumbnails__container">
 			<div
@@ -71,7 +69,7 @@ const detection = ref<boolean>(false);
 const thumbnailsContainer = ref<HTMLElement | null>(null);
 const result = ref<{ type: string } | null>(null);
 
-const fireRects = ref<
+const rects = ref<
 	{
 		top: number;
 		left: number;
@@ -86,21 +84,21 @@ const imageElement = ref<HTMLImageElement | null>(null);
 const currentImageSrc = computed(() => images.value[currentIndex.value]?.url || null);
 
 const message = computed(() => {
-	if (result.value?.type === 'fire') {
-		const newArr = props.messageTypes.filter((type) => type.class === 'result--fire');
+	if (result.value?.type === 'object') {
+		const newArr = props.messageTypes.filter((type) => type.class === 'result--object');
 		return newArr.length > 0 ? newArr[0].message : 'Статус огня не определен';
 	} else {
-		const newArr = props.messageTypes.filter((type) => type.class === 'result--no-fire');
+		const newArr = props.messageTypes.filter((type) => type.class === 'result--no-object');
 		return newArr.length > 0 ? newArr[0].message : 'Статус огня не определен';
 	}
 });
 
 const resultClass = computed(() => {
-	if (result.value?.type === 'fire') {
-		const newArr = props.messageTypes.filter((type) => type.class === 'result--fire');
+	if (result.value?.type === 'object') {
+		const newArr = props.messageTypes.filter((type) => type.class === 'result--object');
 		return newArr.length > 0 ? newArr[0].class : 'result--info';
 	} else {
-		const newArr = props.messageTypes.filter((type) => type.class === 'result--no-fire');
+		const newArr = props.messageTypes.filter((type) => type.class === 'result--no-object');
 		return newArr.length > 0 ? newArr[0].class : 'result--info';
 	}
 });
@@ -139,7 +137,7 @@ const setPreviewImage = (index: number) => {
 
 const clearPreview = () => {
 	detection.value = false;
-	fireRects.value = [];
+	rects.value = [];
 	result.value = null;
 };
 
@@ -195,14 +193,14 @@ const sendRequest = async () => {
 		const filteredObjects = data.objects.filter((obj: any) => objectTypes.includes(obj.type));
 
 		if (filteredObjects.length > 0) {
-			result.value = { type: 'fire' };
+			result.value = { type: 'object' };
 			const img = imageElement.value;
 
 			if (img) {
 				const scaleX = img.clientWidth / img.naturalWidth;
 				const scaleY = img.clientHeight / img.naturalHeight;
 
-				fireRects.value = filteredObjects.map((object: any) => {
+				rects.value = filteredObjects.map((object: any) => {
 					const [x, y, w, h] = object.rect;
 					return {
 						left: x * scaleX,
@@ -215,13 +213,13 @@ const sendRequest = async () => {
 				});
 			}
 		} else {
-			result.value = { type: 'no_fire' };
-			fireRects.value = [];
+			result.value = { type: 'no_object' };
+			rects.value = [];
 		}
 	} catch (error) {
 		console.error('Ошибка при запросе:', error);
-		fireRects.value = [];
-		result.value = { type: 'no_fire' };
+		rects.value = [];
+		result.value = { type: 'no_object' };
 	}
 };
 
@@ -278,47 +276,6 @@ watch(currentImageSrc, () => {
 		padding: 2px 4px;
 		border-radius: 4px;
 		transform: translateY(-100%);
-	}
-}
-
-.result {
-	position: relative;
-	display: flex;
-	align-items: center;
-	padding: 10px 30px 10px 40px;
-	border-radius: $border-radius;
-	max-width: fit-content;
-	word-wrap: break-word;
-	font-size: 23px;
-	height: 40px;
-	opacity: 0.85;
-	margin: 20px 0;
-
-	@media (max-width: 835px) {
-		font-size: 17px;
-	}
-
-	&__icon {
-		display: flex;
-		position: absolute;
-		transform: rotate(180deg);
-		left: 10px;
-		height: 30px;
-	}
-
-	&--fire {
-		background-color: #e0fde7;
-		color: $color-success;
-	}
-
-	&--no-fire {
-		background-color: #f2dee0;
-		color: $color-error;
-	}
-
-	&--info {
-		background-color: #e3e3ff;
-		color: $color-primary;
 	}
 }
 
@@ -384,12 +341,12 @@ watch(currentImageSrc, () => {
 		height: 30px;
 	}
 
-	&--fire {
+	&--object {
 		background-color: #e0fde7;
 		color: $color-success;
 	}
 
-	&--no-fire {
+	&--no-object {
 		background-color: #f2dee0;
 		color: $color-error;
 	}
